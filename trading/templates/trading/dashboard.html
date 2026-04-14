@@ -1,0 +1,125 @@
+{% extends 'trading/base.html' %}
+{% load static %}
+
+{% block title %}Мой счёт | TradeAI{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Приветствие и метрики -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Добрый день, {{ user.first_name|default:user.username }}! </h2>
+            <p class="text-muted">Ваш портфель на {{ now|date:"d.m.Y" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'configure_app' %}" class="btn btn-outline-secondary"><i class="bi bi-sliders2"></i> Настроить</a>
+            <a href="{% url 'trading_decision' %}" class="btn btn-primary"><i class="bi bi-play-circle"></i> Торговать</a>
+        </div>
+    </div>
+
+    <!-- Карточки с общей информацией -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4 animate-card">
+            <div class="card h-100 border-0">
+                <div class="card-body">
+                    <span class="text-muted text-uppercase small fw-semibold"><i class="bi bi-cash-stack me-1"></i>Общий баланс</span>
+                    <h3 class="display-6 fw-bold mt-2">${{ total_value|floatformat:2 }}</h3>
+                    <span class="text-success"><i class="bi bi-arrow-up-short"></i> +2.4% за неделю</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 animate-card" style="animation-delay:0.05s">
+            <div class="card h-100 border-0">
+                <div class="card-body">
+                    <span class="text-muted text-uppercase small fw-semibold"><i class="bi bi-pie-chart"></i>Активов</span>
+                    <h3 class="display-6 fw-bold mt-2">{{ portfolio.count }}</h3>
+                    <span>в портфеле</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 animate-card" style="animation-delay:0.1s">
+            <div class="card h-100 border-0">
+                <div class="card-body">
+                    <span class="text-muted text-uppercase small fw-semibold"><i class="bi bi-robot"></i>Статус AI</span>
+                    <h3 class="display-6 fw-bold mt-2">
+                        {% if trading_active %}<span class="text-success">Активен</span>{% else %}<span class="text-secondary">Остановлен</span>{% endif %}
+                    </h3>
+                    <span>автоторговля</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- График портфеля (мини) -->
+    <div class="card mb-4 border-0 animate-card">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-activity me-2"></i>Динамика портфеля</span>
+            <span class="badge bg-success-soft">+5.8% за месяц</span>
+        </div>
+        <div class="card-body">
+            <div style="height: 80px; width: 100%;">
+                <!-- Здесь можно вставить реальный график (SVG или canvas), но для демо заглушка -->
+                <svg viewBox="0 0 400 80" preserveAspectRatio="none" style="width:100%; height:100%;">
+                    <polyline points="0,60 20,55 40,50 60,45 80,48 100,30 120,35 140,20 160,25 180,10 200,15 220,5 240,8 260,2 280,10 300,5 320,12 340,7 360,15 380,10 400,5" 
+                              fill="none" stroke="#1a5f7a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polygon points="0,60 20,55 40,50 60,45 80,48 100,30 120,35 140,20 160,25 180,10 200,15 220,5 240,8 260,2 280,10 300,5 320,12 340,7 360,15 380,10 400,5 400,80 0,80" 
+                             fill="url(#gradient)" opacity="0.15"/>
+                    <defs><linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1a5f7a"/><stop offset="100%" stop-color="#ffffff"/></linearGradient></defs>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица активов -->
+    <div class="card border-0 animate-card">
+        <div class="card-header bg-transparent">
+            <i class="bi bi-table me-2"></i>Мои активы
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Актив</th>
+                        <th>Валюта</th>
+                        <th>Кол-во</th>
+                        <th>Цена входа</th>
+                        <th>Тек. цена</th>
+                        <th>Изм.</th>
+                        <th>Стоимость</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in portfolio %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-light rounded-circle p-2 me-3">
+                                    <i class="bi bi-coin text-primary"></i>
+                                </div>
+                                <span class="fw-semibold">{{ item.stock.title }}</span>
+                            </div>
+                        </td>
+                        <td>{{ item.currency }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>${{ item.price|floatformat:4 }}</td>
+                        <td>${{ item.stock.close_price|floatformat:4 }}</td>
+                        <td>
+                            {% with change=item.stock.close_price|add:item.price|floatformat:4 %}
+                                {% if item.stock.close_price > item.price %}
+                                    <span class="text-success"><i class="bi bi-caret-up-fill"></i> +{{ change }}%</span>
+                                {% else %}
+                                    <span class="text-danger"><i class="bi bi-caret-down-fill"></i> {{ change }}%</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="fw-bold">${{ item.stock.close_price|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center py-5 text-muted">Портфель пуст. Добавьте активы в разделе «Инструменты».</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'trading/base.html' %}
+{% load static %}
+
+{% block title %}{{ news.title }} | TradeAI{% endblock %}
+
+{% block content %}
+<div class="news-detail-page">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'news' %}">Новости</a></li>
+            <li class="breadcrumb-item active">{{ news.category }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                {% if news.image_url %}
+                <img src="{{ news.image_url }}" class="card-img-top" alt="{{ news.title }}" 
+                     style="height: 300px; object-fit: cover; border-radius: 16px 16px 0 0;">
+                {% endif %}
+                <div class="card-body p-4">
+                    <span class="badge bg-primary-soft text-primary mb-3">{{ news.category }}</span>
+                    <h1 class="display-6 fw-bold mb-3">{{ news.title }}</h1>
+                    <div class="d-flex align-items-center text-muted small mb-3">
+                        <span class="me-3">
+                            <i class="bi bi-newspaper me-1"></i>{{ news.source }}
+                        </span>
+                        <span>
+                            <i class="bi bi-clock me-1"></i>{{ news.published_at|date:"d.m.Y H:i" }}
+                        </span>
+                    </div>
+
+                    <div class="alert alert-light mb-4">
+                        <strong>{{ news.summary }}</strong>
+                    </div>
+
+                    <div class="news-content">
+                        {{ news.content|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            {% if related_news %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-files me-2"></i>Похожие новости
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for related in related_news %}
+                    <a href="{% url 'news_detail' related.slug %}" class="text-decoration-none">
+                        <div class="d-flex mb-3 pb-3 border-bottom">
+                            {% if related.image_url %}
+                            <img src="{{ related.image_url }}" class="me-3 rounded" width="60" height="60" 
+                                 style="object-fit: cover;">
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold text-dark mb-1">{{ related.title|truncatewords:8 }}</h6>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>{{ related.published_at|date:"d.m H:i" }}
+                                </small>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.news-content {
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+.bg-primary-soft {
+    background: rgba(26,95,122,0.1) !important;
+}
+a:hover h6 {
+    color: #1a5f7a !important;
+}
+</style>
+{% endblock %}

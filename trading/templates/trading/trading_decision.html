@@ -1,0 +1,46 @@
+{% extends 'trading/base.html' %}
+{% block title %}Отчёт и решение{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 pt-4">
+                <h3 class="text-primary">📊 Отчёт о торговле</h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-group mb-4">
+                    {% for line in report_lines %}
+                        <li class="list-group-item">{{ line }}</li>
+                    {% endfor %}
+                </ul>
+
+                {% if trading_active %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Торговля активна. Вы можете остановить её или продолжить.
+                    </div>
+                {% else %}
+                    <div class="alert alert-secondary">
+                        Торговля неактивна. Сначала настройте параметры.
+                    </div>
+                {% endif %}
+
+                {% if trading_active %}
+                <form method="post" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <button type="submit" name="action" value="continue" class="btn btn-success btn-lg flex-fill">
+                        <i class="bi bi-play-circle"></i> Продолжить торги
+                    </button>
+                    <button type="submit" name="action" value="stop" class="btn btn-danger btn-lg flex-fill">
+                        <i class="bi bi-stop-circle"></i> Остановить торги
+                    </button>
+                </form>
+                {% else %}
+                    <a href="{% url 'configure_app' %}" class="btn btn-primary btn-lg w-100">
+                        Настроить торговлю
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

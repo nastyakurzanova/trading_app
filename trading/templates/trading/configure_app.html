@@ -1,0 +1,105 @@
+{% extends 'trading/base.html' %}
+{% load static %}
+
+{% block title %}Настройка торговли{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 pt-4 pb-0">
+                <h3 class="card-title mb-0 text-primary">Настройка приложения</h3>
+                <p class="text-muted">Выберите параметры торговли</p>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Маржа -->
+                    <div class="mb-3">
+                        <label for="{{ form.margin_type.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.margin_type.label }}
+                        </label>
+                        {{ form.margin_type }}
+                        {% if form.margin_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.margin_type.errors|striptags }}</div>
+                        {% endif %}
+                        <div class="form-text">Изолированная маржа ограничивает риск по одной позиции, кросс-маржа использует весь баланс.</div>
+                    </div>
+
+                    <!-- Валюта -->
+                    <div class="mb-3">
+                        <label for="{{ form.currency.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.currency.label }}
+                        </label>
+                        {{ form.currency }}
+                        {% if form.currency.errors %}
+                            <div class="text-danger small mt-1">{{ form.currency.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Кредитное плечо -->
+                    <div class="mb-3">
+                        <label for="{{ form.leverage.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.leverage.label }}
+                        </label>
+                        {{ form.leverage }}
+                        {% if form.leverage.errors %}
+                            <div class="text-danger small mt-1">{{ form.leverage.errors|striptags }}</div>
+                        {% endif %}
+                        <div class="form-text">Чем выше плечо, тем больше потенциальная прибыль и риск.</div>
+                    </div>
+
+                    <!-- Процент депозита -->
+                    <div class="mb-4">
+                        <label for="{{ form.deposit_percent.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.deposit_percent.label }}
+                        </label>
+                        <div class="input-group">
+                            {{ form.deposit_percent }}
+                            <span class="input-group-text">%</span>
+                        </div>
+                        {% if form.deposit_percent.errors %}
+                            <div class="text-danger small mt-1">{{ form.deposit_percent.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Продолжить <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-white border-0 text-muted small py-3">
+                <i class="bi bi-shield-lock"></i> Настройки можно изменить в любое время в разделе «Мой счёт».
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<!-- Для красивого отображения полей формы -->
+<style>
+    select, input[type="number"] {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    select:focus, input:focus {
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+{% endblock %}

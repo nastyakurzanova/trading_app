@@ -1,0 +1,200 @@
+{% extends 'trading/base.html' %}
+{% load static %}
+
+{% block title %}{{ stock.title }} | TradeAI{% endblock %}
+
+{% block content %}
+<div class="stock-detail-page">
+    <!-- Навигация -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'instruments' %}">Инструменты</a></li>
+            <li class="breadcrumb-item active">{{ stock.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <!-- Основная информация -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start justify-content-between mb-4">
+                        <div>
+                            <h1 class="fw-bold mb-2">{{ stock.title }}</h1>
+                            {% if stock.full_name %}
+                            <p class="text-muted mb-2">{{ stock.full_name }}</p>
+                            {% endif %}
+                            <span class="badge bg-primary-soft text-primary">{{ stock.category.title }}</span>
+                            <span class="badge bg-light text-dark ms-2">{{ stock.sector|default:"Финансы" }}</span>
+                        </div>
+                        <div class="text-end">
+                            <div class="display-5 fw-bold mb-2">
+                                {% if stock.currency == 'RUB' %}₽{% else %}${% endif %}
+                                {{ stock.close_price|floatformat:2 }}
+                            </div>
+                            {% with change=stock.get_change_percent %}
+<span class="fs-5 {% if change >= 0 %}text-success{% else %}text-danger{% endif %}">
+    {% if change >= 0 %}▲{% else %}▼{% endif %} 
+    {% if change >= 0 %}
+        {{ change|floatformat:2 }}
+    {% else %}
+        {{ change|stringformat:".2f"|slice:"1:" }}
+    {% endif %}%
+</span>
+{% endwith %}
+                        </div>
+                    </div>
+                    
+                    <!-- График -->
+                    {% if chart_uri %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Динамика за 30 дней</h6>
+                        <img src="{{ chart_uri }}" class="img-fluid rounded-3" alt="График">
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Ключевые показатели -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 bg-light rounded-3">
+                                <small class="text-muted d-block">Открытие</small>
+                                <strong>{% if stock.currency == 'RUB' %}₽{% else %}${% endif %}{{ stock.open_price|floatformat:2 }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 bg-light rounded-3">
+                                <small class="text-muted d-block">Макс. 52 нед.</small>
+                                <strong>{% if stock.currency == 'RUB' %}₽{% else %}${% endif %}{{ stock.close_price|add:10|floatformat:2 }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 bg-light rounded-3">
+                                <small class="text-muted d-block">Мин. 52 нед.</small>
+                                <strong>{% if stock.currency == 'RUB' %}₽{% else %}${% endif %}{{ stock.close_price|add:-10|floatformat:2 }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 bg-light rounded-3">
+                                <small class="text-muted d-block">Объём</small>
+                                <strong>1.2M</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Описание -->
+                    {% if stock.description %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">О компании</h6>
+                        <p class="text-muted">{{ stock.description }}</p>
+                    </div>
+                    {% else %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">О компании</h6>
+                        <p class="text-muted">{{ stock.full_name|default:stock.title }} — один из ведущих игроков на рынке. Компания демонстрирует стабильный рост и хорошие финансовые показатели.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Боковая панель - покупка -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 100px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Торговля</h5>
+                    
+                    {% if in_portfolio %}
+                    <div class="alert alert-success mb-4">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        Актив уже в вашем портфеле
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'buy_stock' stock.id %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Тип сделки</label>
+                            <select class="form-select" disabled>
+                                <option selected>Покупка</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Количество</label>
+                            <input type="number" name="quantity" class="form-control" value="1" min="1" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Цена за единицу</label>
+                            <div class="input-group">
+                                <span class="input-group-text">{% if stock.currency == 'RUB' %}₽{% else %}${% endif %}</span>
+                                <input type="number" name="price" class="form-control" value="{{ stock.close_price }}" step="0.01" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Валюта</label>
+                            <input type="text" name="currency" class="form-control" value="{{ stock.currency }}" readonly>
+                        </div>
+                        
+                        <div class="alert alert-light mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Комиссия:</span>
+                                <span>0.1%</span>
+                            </div>
+                            <div class="d-flex justify-content-between fw-bold">
+                                <span>Итого:</span>
+                                <span id="totalPrice">
+                                    {% if stock.currency == 'RUB' %}₽{% else %}${% endif %}
+                                    {{ stock.close_price|floatformat:2 }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-cart-check me-2"></i>Купить
+                        </button>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Информация -->
+                    <div class="small text-muted">
+                        <p><i class="bi bi-info-circle me-1"></i> Торговля осуществляется мгновенно по рыночной цене.</p>
+                        <p><i class="bi bi-shield-check me-1"></i> Ваши средства застрахованы.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.querySelector('input[name="quantity"]');
+    const priceInput = document.querySelector('input[name="price"]');
+    const totalSpan = document.getElementById('totalPrice');
+    const currency = '{% if stock.currency == "RUB" %}₽{% else %}${% endif %}';
+    
+    function updateTotal() {
+        const quantity = parseInt(quantityInput.value) || 1;
+        const price = parseFloat(priceInput.value) || 0;
+        const total = (quantity * price).toFixed(2);
+        totalSpan.textContent = currency + total;
+    }
+    
+    quantityInput.addEventListener('input', updateTotal);
+    updateTotal();
+});
+</script>
+
+<style>
+.bg-primary-soft {
+    background: rgba(26,95,122,0.1) !important;
+}
+.sticky-top {
+    z-index: 100;
+}
+</style>
+{% endblock %}

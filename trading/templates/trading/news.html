@@ -1,0 +1,185 @@
+{% extends 'trading/base.html' %}
+{% load static %}
+
+{% block title %}Новости | TradeAI{% endblock %}
+
+{% block content %}
+
+
+<div class="news-page">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="fw-bold"><i class="bi bi-newspaper me-2"></i>Финансовые новости</h2>
+    </div>
+
+    <!-- Фильтры по категориям -->
+    <div class="mb-4">
+        <div class="btn-group flex-wrap" role="group">
+            <a href="?category=all" class="btn btn-outline-secondary {% if current_category == 'all' %}active{% endif %}">
+                <i class="bi bi-grid me-1"></i>Все
+            </a>
+            {% for cat in categories %}
+            <a href="?category={{ cat }}" class="btn btn-outline-secondary {% if current_category == cat %}active{% endif %}">
+                {{ cat }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+ <!-- Важные новости -->
+{% if featured_news %}
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <h4 class="fw-bold mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Главное</h4>
+    </div>
+    {% for item in featured_news %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 hover-shadow transition"
+             onclick="window.location.href='{% url 'news_detail' item.slug %}'"
+             style="cursor: pointer;">
+            <div class="position-relative">
+                <!-- Стильный градиент вместо картинки -->
+                <div class="news-image" style="height: 160px; border-radius: 16px 16px 0 0; 
+                     background: {% if item.category == 'Экономика' %}
+                         linear-gradient(135deg, #1a5f7a, #0d9488)
+                     {% elif item.category == 'Рынки' %}
+                         linear-gradient(135deg, #2563eb, #7c3aed)
+                     {% elif item.category == 'Компании' %}
+                         linear-gradient(135deg, #059669, #047857)
+                     {% elif item.category == 'Крипто' %}
+                         linear-gradient(135deg, #f59e0b, #d97706)
+                     {% elif item.category == 'Валюты' %}
+                         linear-gradient(135deg, #dc2626, #b91c1c)
+                     {% else %}
+                         linear-gradient(135deg, #1a5f7a, #2288aa)
+                     {% endif %};">
+                    <div class="d-flex align-items-center justify-content-center h-100">
+                        <div class="text-center text-white">
+                            <i class="bi bi-{% if item.category == 'Экономика' %}bank{% elif item.category == 'Рынки' %}graph-up{% elif item.category == 'Компании' %}building{% elif item.category == 'Крипто' %}currency-bitcoin{% elif item.category == 'Валюты' %}currency-exchange{% else %}newspaper{% endif %} fs-1 mb-2" style="opacity: 0.8;"></i>
+                            <h6 class="mb-0 fw-bold" style="opacity: 0.9;">{{ item.category }}</h6>
+                        </div>
+                    </div>
+                </div>
+                <span class="badge bg-warning position-absolute top-0 end-0 m-3">
+                    <i class="bi bi-star-fill me-1"></i>Важное
+                </span>
+            </div>
+            <div class="card-body">
+                <span class="badge bg-primary-soft text-primary mb-2">{{ item.category }}</span>
+                <h5 class="card-title fw-bold">{{ item.title }}</h5>
+                <p class="card-text text-muted small">{{ item.summary|truncatewords:20 }}</p>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="text-muted small">
+                        <i class="bi bi-newspaper me-1"></i>{{ item.source }}
+                    </span>
+                    <span class="text-muted small">
+                        <i class="bi bi-clock me-1"></i>{{ item.published_at|date:"d.m.Y H:i" }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Список всех новостей -->
+<div class="row g-4">
+    <div class="col-12">
+        <h4 class="fw-bold mb-3"><i class="bi bi-list-ul me-2"></i>Последние новости</h4>
+    </div>
+    
+    {% if news %}
+        {% for item in news %}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm hover-shadow transition"
+                 onclick="window.location.href='{% url 'news_detail' item.slug %}'"
+                 style="cursor: pointer;">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        <!-- Градиент с иконкой -->
+                        <div class="h-100 d-flex align-items-center justify-content-center" 
+                             style="min-height: 120px; border-radius: 16px 0 0 16px;
+                             background: {% if item.category == 'Экономика' %}
+                                 linear-gradient(135deg, #1a5f7a, #0d9488)
+                             {% elif item.category == 'Рынки' %}
+                                 linear-gradient(135deg, #2563eb, #7c3aed)
+                             {% elif item.category == 'Компании' %}
+                                 linear-gradient(135deg, #059669, #047857)
+                             {% elif item.category == 'Крипто' %}
+                                 linear-gradient(135deg, #f59e0b, #d97706)
+                             {% elif item.category == 'Валюты' %}
+                                 linear-gradient(135deg, #dc2626, #b91c1c)
+                             {% else %}
+                                 linear-gradient(135deg, #1a5f7a, #2288aa)
+                             {% endif %};">
+                            <i class="bi bi-{% if item.category == 'Экономика' %}bank{% elif item.category == 'Рынки' %}graph-up{% elif item.category == 'Компании' %}building{% elif item.category == 'Крипто' %}currency-bitcoin{% elif item.category == 'Валюты' %}currency-exchange{% else %}newspaper{% endif %} fs-1 text-white" style="opacity: 0.7;"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <span class="badge bg-light text-dark mb-2">{{ item.category }}</span>
+                            <h6 class="card-title fw-bold">{{ item.title|truncatewords:10 }}</h6>
+                            <p class="card-text text-muted small">{{ item.summary|truncatewords:15 }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">{{ item.source }}</span>
+                                <span class="text-muted small">{{ item.published_at|date:"d.m H:i" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-newspaper fs-1"></i>
+                <p class="mt-3">Новости загружаются...</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.hover-shadow:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+}
+.transition {
+    transition: all 0.3s ease;
+}
+.bg-primary-soft {
+    background: rgba(26,95,122,0.1) !important;
+}
+.btn-group .btn.active {
+    background: linear-gradient(145deg, #1a5f7a 0%, #2288aa 100%);
+    color: white !important;
+    border-color: transparent !important;
+}
+</style>
+
+
+<style>
+.hover-shadow:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+}
+.transition {
+    transition: all 0.3s ease;
+}
+.bg-primary-soft {
+    background: rgba(26,95,122,0.1) !important;
+}
+.btn-group .btn.active {
+    background: linear-gradient(145deg, #1a5f7a 0%, #2288aa 100%);
+    color: white !important;
+    border-color: transparent !important;
+}
+.card-img-top {
+    transition: transform 0.3s ease;
+}
+.card:hover .card-img-top {
+    transform: scale(1.02);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends 'trading/base.html' %}
+{% load static %}
+
+{% block title %}Аналитика | TradeAI{% endblock %}
+
+{% block content %}
+<div class="analytics">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="fw-bold"><i class="bi bi-bar-chart-steps me-2"></i>Аналитика рынка</h2>
+        <div class="d-flex gap-2">
+            <select id="symbolSelect" class="form-select" style="width: auto;">
+                {% for s in symbols %}
+                <option value="{{ s.name }}" {% if s.name == current_symbol %}selected{% endif %}>
+                    {{ s.name }} - {{ s.category }}
+                </option>
+                {% endfor %}
+            </select>
+            <div class="btn-group" role="group" id="periodButtons">
+                <button class="btn btn-outline-secondary period-btn {% if current_period == '1D' %}active{% endif %}" data-period="1D">1Д</button>
+                <button class="btn btn-outline-secondary period-btn {% if current_period == '1W' %}active{% endif %}" data-period="1W">1Н</button>
+                <button class="btn btn-outline-secondary period-btn {% if current_period == '1M' %}active{% endif %}" data-period="1M">1М</button>
+                <button class="btn btn-outline-secondary period-btn {% if current_period == '3M' %}active{% endif %}" data-period="3M">3М</button>
+                <button class="btn btn-outline-secondary period-btn {% if current_period == '6M' %}active{% endif %}" data-period="6M">6М</button>
+                <button class="btn btn-outline-secondary period-btn {% if current_period == '1Y' %}active{% endif %}" data-period="1Y">1Г</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-currency-exchange me-2"></i>{{ current_symbol }} · Свечной график</span>
+                    <span class="badge bg-light text-dark" id="updateTime">Обновлено: {{ last_update }}</span>
+                </div>
+                <div class="card-body">
+                    <div id="chartContainer">
+                        {% if chart_uri %}
+                            <img src="{{ chart_uri }}" class="img-fluid rounded-3" alt="График цены" id="chartImage">
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-exclamation-circle fs-1"></i>
+                                <p class="mt-3">Нет данных для отображения</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-center mt-3" id="chartLoader" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Загрузка свежих данных...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0">
+                    <i class="bi bi-cpu me-2"></i>AI‑прогноз
+                </div>
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <span class="text-muted small">Следующие 24 часа</span>
+                    <div class="display-3 fw-bold mb-2" id="predictionValue">
+                        {% if prediction %}
+                            {{ prediction }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </div>
+                    <div id="predictionDirection">
+                        {% if prediction %}
+                            <span class="{% if direction == 'рост' %}text-success{% else %}text-danger{% endif %}">
+                                <i class="bi bi-arrow-{% if direction == 'рост' %}up{% else %}down{% endif %}-short"></i> 
+                                Вероятность {{ direction }}: <span id="confidenceValue">{{ confidence }}</span>%
+                            </span>
+                        {% endif %}
+                    </div>
+                    <hr class="my-4">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" id="refreshPredictionBtn">
+                            <i class="bi bi-magic"></i> 
+                            <span class="btn-text">Обновить прогноз</span>
+                            <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                        <a href="?download=report&symbol={{ current_symbol }}&period={{ current_period }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-download"></i> Скачать отчёт
+                        </a>
+                    </div>
+                    <div class="mt-3 small text-muted">
+                        <i class="bi bi-info-circle"></i> Прогноз обновляется автоматически при смене инструмента или периода
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const symbolSelect = document.getElementById('symbolSelect');
+    const periodBtns = document.querySelectorAll('.period-btn');
+    const refreshBtn = document.getElementById('refreshPredictionBtn');
+    const chartContainer = document.getElementById('chartContainer');
+    const chartLoader = document.getElementById('chartLoader');
+    const chartImage = document.getElementById('chartImage');
+    
+    // Функция обновления страницы с новыми параметрами
+    function updatePage(symbol, period) {
+        chartContainer.style.opacity = '0.5';
+        chartLoader.style.display = 'block';
+        
+        const url = new URL(window.location.href);
+        url.searchParams.set('symbol', symbol);
+        url.searchParams.set('period', period);
+        window.location.href = url.toString();
+    }
+    
+    // Обработчик смены символа
+    symbolSelect.addEventListener('change', function() {
+        const activePeriod = document.querySelector('.period-btn.active').dataset.period;
+        updatePage(this.value, activePeriod);
+    });
+    
+    // Обработчики кнопок периода
+    periodBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            periodBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            updatePage(symbolSelect.value, this.dataset.period);
+        });
+    });
+    
+    // Обновление прогноза через AJAX
+    refreshBtn.addEventListener('click', async function() {
+        const btn = this;
+        const btnText = btn.querySelector('.btn-text');
+        const spinner = btn.querySelector('.spinner-border');
+        
+        btn.disabled = true;
+        btnText.textContent = 'Обновление...';
+        spinner.classList.remove('d-none');
+        
+        try {
+            const response = await fetch(window.location.href, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            const data = await response.json();
+            
+            // Обновляем значения на странице
+            document.getElementById('predictionValue').textContent = data.prediction || '—';
+            document.getElementById('confidenceValue').textContent = data.confidence;
+            
+            const directionDiv = document.getElementById('predictionDirection');
+            const direction = data.direction;
+            directionDiv.innerHTML = `
+                <span class="${direction === 'рост' ? 'text-success' : 'text-danger'}">
+                    <i class="bi bi-arrow-${direction === 'рост' ? 'up' : 'down'}-short"></i> 
+                    Вероятность ${direction}а: <span id="confidenceValue">${data.confidence}</span>%
+                </span>
+            `;
+            
+            // Показываем уведомление
+            showToast('Прогноз успешно обновлён', 'success');
+            
+        } catch (error) {
+            console.error('Ошибка:', error);
+            showToast('Ошибка при обновлении прогноза', 'danger');
+        } finally {
+            btn.disabled = false;
+            btnText.textContent = 'Обновить прогноз';
+            spinner.classList.add('d-none');
+        }
+    });
+    
+    // Функция показа уведомлений
+    function showToast(message, type) {
+        const toastContainer = document.createElement('div');
+        toastContainer.style.position = 'fixed';
+        toastContainer.style.bottom = '20px';
+        toastContainer.style.right = '20px';
+        toastContainer.style.zIndex = '9999';
+        toastContainer.className = `alert alert-${type} alert-dismissible fade show`;
+        toastContainer.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toastContainer);
+        
+        setTimeout(() => {
+            toastContainer.remove();
+        }, 3000);
+    }
+});
+</script>
+
+<style>
+.analytics .card {
+    transition: opacity 0.3s ease;
+}
+#chartContainer {
+    min-height: 400px;
+}
+.period-btn.active {
+    background: linear-gradient(145deg, #1a5f7a 0%, #2288aa 100%) !important;
+    color: white !important;
+    border-color: transparent !important;
+}
+</style>
+{% endblock %}

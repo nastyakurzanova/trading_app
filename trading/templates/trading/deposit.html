@@ -1,0 +1,205 @@
+{% extends 'trading/base.html' %}
+{% load static %}
+
+{% block title %}Пополнение счёта | TradeAI{% endblock %}
+
+{% block content %}
+<div class="deposit-page">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold"><i class="bi bi-wallet2 me-2"></i>Пополнение торгового счёта</h2>
+            <p class="text-muted">Выберите удобный способ пополнения</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Форма пополнения -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm animate-card">
+                <div class="card-header bg-transparent border-0 pt-4">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-plus-circle me-2"></i>Пополнить счёт</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="depositForm">
+                        {% csrf_token %}
+                        
+                        <!-- Сумма -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Сумма пополнения</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light border-0">₽</span>
+                                <input type="number" name="amount" class="form-control border-0 bg-light" 
+                                       placeholder="Введите сумму" min="1" step="0.01" required>
+                            </div>
+                            <div class="mt-2 d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm amount-preset" data-amount="100">100₽</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm amount-preset" data-amount="500">500₽</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm amount-preset" data-amount="1000">1,000₽</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm amount-preset" data-amount="5000">5,000₽</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Способ оплаты -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Способ оплаты</label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <input type="radio" class="btn-check" name="payment_type" id="card" value="card" checked>
+                                    <label class="btn btn-outline-secondary w-100 h-100 p-4 text-start" for="card">
+                                        <i class="bi bi-credit-card fs-2 mb-2 d-block"></i>
+                                        <strong>Банковская карта</strong>
+                                        <small class="d-block text-muted">Visa, Mastercard, МИР</small>
+                                    </label>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="radio" class="btn-check" name="payment_type" id="crypto" value="crypto">
+                                    <label class="btn btn-outline-secondary w-100 h-100 p-4 text-start" for="crypto">
+                                        <i class="bi bi-currency-bitcoin fs-2 mb-2 d-block"></i>
+                                        <strong>Криптовалюта</strong>
+                                        <small class="d-block text-muted">BTC, ETH, USDT</small>
+                                    </label>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="radio" class="btn-check" name="payment_type" id="bank" value="bank">
+                                    <label class="btn btn-outline-secondary w-100 h-100 p-4 text-start" for="bank">
+                                        <i class="bi bi-bank fs-2 mb-2 d-block"></i>
+                                        <strong>Банковский перевод</strong>
+                                        <small class="d-block text-muted">SWIFT, SEPA</small>
+                                    </label>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="radio" class="btn-check" name="payment_type" id="qiwi" value="qiwi">
+                                    <label class="btn btn-outline-secondary w-100 h-100 p-4 text-start" for="qiwi">
+                                        <i class="bi bi-phone fs-2 mb-2 d-block"></i>
+                                        <strong>Электронные кошельки</strong>
+                                        <small class="d-block text-muted">Qiwi, ЮMoney, WebMoney</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Платёжная система (скрытое поле, заполняется через JS) -->
+                        <input type="hidden" name="acquiring" id="acquiring" value="Visa/Mastercard">
+                        
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-arrow-right-circle me-2"></i>Продолжить
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Информация о счёте и история -->
+        <div class="col-lg-5">
+            <!-- Баланс -->
+            <div class="card border-0 shadow-sm mb-4 animate-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted">Текущий баланс</span>
+                        <i class="bi bi-eye fs-5"></i>
+                    </div>
+                  <h2 class="display-5 fw-bold mb-3">${{ current_balance|floatformat:2 }}</h2>
+                    <div class="d-flex gap-3">
+    <div>
+        <small class="text-muted d-block">Всего пополнено</small>
+        <strong>${{ total_deposits|floatformat:2 }}</strong>
+    </div>
+    <div>
+        <small class="text-muted d-block">Доступно для торговли</small>
+        <strong>${{ current_balance|floatformat:2 }}</strong>
+    </div>
+</div>
+                </div>
+            </div>
+            
+            <!-- История операций -->
+            <div class="card border-0 shadow-sm animate-card">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>История пополнений</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if payments %}
+                    <div class="list-group list-group-flush">
+                        {% for payment in payments %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">+${{ payment.amount|floatformat:2 }}</div>
+                                <small class="text-muted">{{ payment.get_payment_type_display }} • {{ payment.acquiring }}</small>
+                            </div>
+                            <small class="text-muted">{{ payment.timestamp|date:"d.m.Y H:i" }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">История операций пуста</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Информация -->
+            <div class="card border-0 shadow-sm mt-4 animate-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-shield-check text-success fs-4 me-3"></i>
+                        <div>
+                            <strong>Безопасные платежи</strong>
+                            <p class="text-muted small mb-0">Все транзакции защищены SSL-шифрованием. Ваши данные в безопасности.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Предустановленные суммы
+    const amountPresets = document.querySelectorAll('.amount-preset');
+    const amountInput = document.querySelector('input[name="amount"]');
+    
+    amountPresets.forEach(btn => {
+        btn.addEventListener('click', function() {
+            amountInput.value = this.dataset.amount;
+        });
+    });
+    
+    // Обновление скрытого поля acquiring при выборе способа оплаты
+    const paymentRadios = document.querySelectorAll('input[name="payment_type"]');
+    const acquiringInput = document.getElementById('acquiring');
+    
+    const acquiringMap = {
+        'card': 'Visa/Mastercard',
+        'crypto': 'Crypto (BTC/ETH/USDT)',
+        'bank': 'Bank Transfer',
+        'qiwi': 'E-wallets'
+    };
+    
+    paymentRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                acquiringInput.value = acquiringMap[this.value] || 'Other';
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.btn-check:checked + .btn-outline-secondary {
+    background: linear-gradient(145deg, #1a5f7a 0%, #2288aa 100%);
+    color: white !important;
+    border-color: transparent !important;
+}
+.btn-check:checked + .btn-outline-secondary small {
+    color: rgba(255,255,255,0.8) !important;
+}
+.amount-preset {
+    border-radius: 20px;
+    padding: 0.25rem 1rem;
+}
+</style>
+{% endblock %}

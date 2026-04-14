@@ -1,0 +1,76 @@
+{% extends 'trading/base.html' %}
+
+{% block title %}Подключение к рынку{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 pt-4 pb-0">
+                <h3 class="card-title mb-0 text-primary"> Подключение к торговой платформе</h3>
+                <p class="text-muted">Введите ваши API-ключи для доступа к торгам</p>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.api_key.id_for_label }}" class="form-label fw-semibold">
+                            API Key
+                        </label>
+                        {{ form.api_key }}
+                        {% if form.api_key.errors %}
+                            <div class="text-danger small mt-1">{{ form.api_key.errors|striptags }}</div>
+                        {% endif %}
+                        <div class="form-text">Публичный ключ, полученный в личном кабинете брокера.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.secret_key.id_for_label }}" class="form-label fw-semibold">
+                            Secret Key
+                        </label>
+                        {{ form.secret_key }}
+                        {% if form.secret_key.errors %}
+                            <div class="text-danger small mt-1">{{ form.secret_key.errors|striptags }}</div>
+                        {% endif %}
+                        <div class="form-text">Секретный ключ. Храните его в безопасности.</div>
+                    </div>
+
+                    <div class="alert alert-warning d-flex align-items-center small" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>
+                            Ключи шифруются и хранятся в зашифрованном виде. Мы не передаём их третьим лицам.
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-plug"></i> Подключиться
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    input[name="api_key"], input[name="secret_key"] {
+        display: block;
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        font-family: 'Courier New', monospace;
+        font-size: 1rem;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+    }
+    input:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        background-color: #fff;
+    }
+</style>
+{% endblock %}

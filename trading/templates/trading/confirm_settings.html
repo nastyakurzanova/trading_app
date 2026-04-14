@@ -1,0 +1,55 @@
+{% extends 'trading/base.html' %}
+{% block title %}Подтверждение настроек{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 pt-4 pb-2">
+                <h3 class="card-title mb-0 text-success">Проверьте настройки</h3>
+                <p class="text-muted">Вы выбрали следующие параметры торговли</p>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush mb-4">
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                        <span><i class="bi bi-diagram-3 me-2"></i>Вид маржи</span>
+                        <span class="badge bg-primary rounded-pill px-3 py-2">
+                            {{ settings.get_margin_type_display }}
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-currency-exchange me-2"></i>Валюта торговли</span>
+                        <span class="fw-bold">{{ settings.currency }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                        <span><i class="bi bi-arrow-left-right me-2"></i>Кредитное плечо</span>
+                        <span class="fw-bold">1:{{ settings.leverage }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-pie-chart me-2"></i>Торгуемый % депозита</span>
+                        <span class="fw-bold">{{ settings.deposit_percent }}%</span>
+                    </li>
+                </ul>
+
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                    <div>
+                        После подтверждения приложение начнёт торговлю с указанными параметрами.
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <form method="post" class="flex-grow-1">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success w-100 btn-lg">
+                            <i class="bi bi-check-lg"></i> Подтвердить и запустить
+                        </button>
+                    </form>
+                    <a href="{% url 'configure_app' %}" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-pencil"></i> Изменить
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
