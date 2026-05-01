@@ -8,12 +8,12 @@
     <!-- Приветствие и метрики -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold">Добрый день, {{ user.first_name|default:user.username }}! </h2>
+            <h2 class="fw-bold">Добрый день, {{ user.first_name|default:user.username }}!</h2>
             <p class="text-muted">Ваш портфель на {{ now|date:"d.m.Y" }}</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{% url 'configure_app' %}" class="btn btn-outline-secondary"><i class="bi bi-sliders2"></i> Настроить</a>
-            <a href="{% url 'trading_decision' %}" class="btn btn-primary"><i class="bi bi-play-circle"></i> Торговать</a>
+            <a href="{% url 'configure_app' %}" class="btn btn-outline-secondary"><i class="bi bi-sliders2 me-1"></i> Настроить</a>
+            <a href="{% url 'trading_decision' %}" class="btn btn-primary"><i class="bi bi-play-circle me-1"></i> Торговать</a>
         </div>
     </div>
 
@@ -22,8 +22,8 @@
         <div class="col-md-4 animate-card">
             <div class="card h-100 border-0">
                 <div class="card-body">
-                    <span class="text-muted text-uppercase small fw-semibold"><i class="bi bi-cash-stack me-1"></i>Общий баланс</span>
-                    <h3 class="display-6 fw-bold mt-2">${{ total_value|floatformat:2 }}</h3>
+                    <span class="text-muted text-uppercase small fw-semibold">Общий баланс</span>
+                    <h3 class="display-6 fw-bold mt-2">₽{{ total_value|floatformat:2 }}</h3>
                     <span class="text-success"><i class="bi bi-arrow-up-short"></i> +2.4% за неделю</span>
                 </div>
             </div>
@@ -31,7 +31,7 @@
         <div class="col-md-4 animate-card" style="animation-delay:0.05s">
             <div class="card h-100 border-0">
                 <div class="card-body">
-                    <span class="text-muted text-uppercase small fw-semibold"><i class="bi bi-pie-chart"></i>Активов</span>
+                    <span class="text-muted text-uppercase small fw-semibold">Активов</span>
                     <h3 class="display-6 fw-bold mt-2">{{ portfolio.count }}</h3>
                     <span>в портфеле</span>
                 </div>
@@ -40,7 +40,7 @@
         <div class="col-md-4 animate-card" style="animation-delay:0.1s">
             <div class="card h-100 border-0">
                 <div class="card-body">
-                    <span class="text-muted text-uppercase small fw-semibold"><i class="bi bi-robot"></i>Статус AI</span>
+                    <span class="text-muted text-uppercase small fw-semibold">Статус AI</span>
                     <h3 class="display-6 fw-bold mt-2">
                         {% if trading_active %}<span class="text-success">Активен</span>{% else %}<span class="text-secondary">Остановлен</span>{% endif %}
                     </h3>
@@ -50,30 +50,41 @@
         </div>
     </div>
 
-    <!-- График портфеля (мини) -->
+    <!-- График портфеля -->
     <div class="card mb-4 border-0 animate-card">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-activity me-2"></i>Динамика портфеля</span>
-            <span class="badge bg-success-soft">+5.8% за месяц</span>
+            <span>Динамика портфеля</span>
+            <span class="badge bg-success-soft text-success">+5.8% за месяц</span>
         </div>
         <div class="card-body">
-            <div style="height: 80px; width: 100%;">
-                <!-- Здесь можно вставить реальный график (SVG или canvas), но для демо заглушка -->
-                <svg viewBox="0 0 400 80" preserveAspectRatio="none" style="width:100%; height:100%;">
-                    <polyline points="0,60 20,55 40,50 60,45 80,48 100,30 120,35 140,20 160,25 180,10 200,15 220,5 240,8 260,2 280,10 300,5 320,12 340,7 360,15 380,10 400,5" 
-                              fill="none" stroke="#1a5f7a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <polygon points="0,60 20,55 40,50 60,45 80,48 100,30 120,35 140,20 160,25 180,10 200,15 220,5 240,8 260,2 280,10 300,5 320,12 340,7 360,15 380,10 400,5 400,80 0,80" 
-                             fill="url(#gradient)" opacity="0.15"/>
-                    <defs><linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1a5f7a"/><stop offset="100%" stop-color="#ffffff"/></linearGradient></defs>
-                </svg>
-            </div>
+            {% if chart_uri %}
+                <img src="{{ chart_uri }}" class="img-fluid rounded-3" alt="График портфеля">
+            {% else %}
+                <div style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 100%; max-width: 600px;">
+                        <svg viewBox="0 0 400 100" preserveAspectRatio="none" style="width:100%; height:100px;">
+                            <polyline points="0,60 10,58 20,55 30,50 40,52 50,45 60,42 70,38 80,40 90,35 100,30 110,28 120,25 130,27 140,22 150,20 160,18 170,20 180,15 190,12 200,15 210,10 220,8 230,10 240,5 250,8 260,5 270,3 280,6 290,3 300,5 310,8 320,5 330,7 340,4 350,6 360,3 370,5 380,2 390,4 400,2" 
+                                  fill="none" stroke="#1a5f7a" stroke-width="2" stroke-linecap="round"/>
+                            <polygon points="0,60 10,58 20,55 30,50 40,52 50,45 60,42 70,38 80,40 90,35 100,30 110,28 120,25 130,27 140,22 150,20 160,18 170,20 180,15 190,12 200,15 210,10 220,8 230,10 240,5 250,8 260,5 270,3 280,6 290,3 300,5 310,8 320,5 330,7 340,4 350,6 360,3 370,5 380,2 390,4 400,2 400,100 0,100" 
+                                     fill="url(#gradient)" opacity="0.12"/>
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#1a5f7a" stop-opacity="0.3"/>
+                                    <stop offset="100%" stop-color="#1a5f7a" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-center text-muted small mt-2">Добавьте активы для отображения реального графика</p>
+            {% endif %}
         </div>
     </div>
 
     <!-- Таблица активов -->
     <div class="card border-0 animate-card">
         <div class="card-header bg-transparent">
-            <i class="bi bi-table me-2"></i>Мои активы
+        
         </div>
         <div class="table-responsive">
             <table class="table align-middle">
@@ -101,21 +112,45 @@
                         </td>
                         <td>{{ item.currency }}</td>
                         <td>{{ item.quantity }}</td>
-                        <td>${{ item.price|floatformat:4 }}</td>
-                        <td>${{ item.stock.close_price|floatformat:4 }}</td>
                         <td>
-                            {% with change=item.stock.close_price|add:item.price|floatformat:4 %}
-                                {% if item.stock.close_price > item.price %}
-                                    <span class="text-success"><i class="bi bi-caret-up-fill"></i> +{{ change }}%</span>
-                                {% else %}
-                                    <span class="text-danger"><i class="bi bi-caret-down-fill"></i> {{ change }}%</span>
-                                {% endif %}
-                            {% endwith %}
+                            {% if item.currency == 'RUB' %}₽{% else %}${% endif %}
+                            {{ item.price|floatformat:2 }}
                         </td>
-                        <td class="fw-bold">${{ item.stock.close_price|floatformat:2 }}</td>
+                        <td>
+                            {% if item.currency == 'RUB' %}₽{% else %}${% endif %}
+                            {{ item.stock.close_price|floatformat:2 }}
+                        </td>
+                        <td>
+                            {% if item.stock.close_price > item.price %}
+                                <span class="text-success">
+                                    <i class="bi bi-caret-up-fill"></i> 
+                                    {% with diff=item.stock.close_price|floatformat:2 %}
+                                        {% widthratio item.stock.close_price item.price 100 as percent %}
+                                        +{{ percent|add:"-100" }}%
+                                    {% endwith %}
+                                </span>
+                            {% else %}
+                                <span class="text-danger">
+                                    <i class="bi bi-caret-down-fill"></i> 
+                                    {% with diff=item.stock.close_price|floatformat:2 %}
+                                        {% widthratio item.stock.close_price item.price 100 as percent %}
+                                        {{ percent|add:"-100" }}%
+                                    {% endwith %}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">
+                            {% if item.currency == 'RUB' %}₽{% else %}${% endif %}
+                            {{ item.stock.close_price|floatformat:2 }}
+                        </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="7" class="text-center py-5 text-muted">Портфель пуст. Добавьте активы в разделе «Инструменты».</td></tr>
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Портфель пуст. Добавьте активы в разделе «Инструменты».
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>

@@ -21,60 +21,63 @@
 <nav class="glass-nav">
     <div class="container d-flex align-items-center justify-content-between">
         <a class="navbar-brand" href="{% url 'dashboard' %}">
-            <i class="bi bi-graph-up-arrow me-1"></i>TradeAI
+          
         </a>
         <ul class="nav">
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-                    <i class="bi bi-speedometer2"></i> Мой счёт
+                  Мой счёт
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}" href="{% url 'analytics' %}">
-                    <i class="bi bi-bar-chart-line"></i> Аналитика
+                    Аналитика
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'instruments' %}active{% endif %}" href="{% url 'instruments' %}">
-                    <i class="bi bi-grid-3x3-gap-fill"></i> Инструменты
+                    Инструменты
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'deposit' %}active{% endif %}" href="{% url 'deposit' %}">
-                    <i class="bi bi-wallet2"></i> Пополнить
+                    Пополнить
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'about_invest' %}active{% endif %}" href="{% url 'about_invest' %}">
-                    <i class="bi bi-info-circle"></i> Про инвестиции
+                   Про инвестиции
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'news' %}active{% endif %}" href="{% url 'news' %}">
-                    <i class="bi bi-newspaper"></i> Новости
+                   Новости
                 </a>
             </li>
+
+            <li><a class="dropdown-item" href="{% url 'profile' %}">Мой профиль</a></li>
+
             {% if user.is_authenticated %}
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                     <i class="bi bi-person-circle"></i> {{ user.username }}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% url 'configure_app' %}"><i class="bi bi-sliders2 me-2"></i>Настройки торговли</a></li>
-                    <li><a class="dropdown-item" href="{% url 'connect_api' %}"><i class="bi bi-key me-2"></i>API ключи</a></li>
-                    <li><a class="dropdown-item" href="{% url 'trading_decision' %}"><i class="bi bi-clipboard-data me-2"></i>Отчёт и решение</a></li>
+                    <li><a class="dropdown-item" href="{% url 'configure_app' %}">Настройки торговли</a></li>
+                    <li><a class="dropdown-item" href="{% url 'connect_api' %}">API ключи</a></li>
+                    <li><a class="dropdown-item" href="{% url 'trading_decision' %}">Отчёт и решение</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="post" action="{% url 'logout' %}">
                             {% csrf_token %}
-                            <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Выйти</button>
+                            <button type="submit" class="dropdown-item">Выйти</button>
                         </form>
                     </li>
                 </ul>
             </li>
             {% else %}
-            <li class="nav-item"><a class="nav-link" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Войти</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'register' %}"><i class="bi bi-person-plus"></i> Регистрация</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'login' %}"> Войти</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Регистрация</a></li>
             {% endif %}
         </ul>
     </div>

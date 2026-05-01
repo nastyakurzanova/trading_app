@@ -17,7 +17,7 @@
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm animate-card">
                 <div class="card-header bg-transparent border-0 pt-4">
-                    <h5 class="fw-bold mb-0"><i class="bi bi-plus-circle me-2"></i>Пополнить счёт</h5>
+                    <h5 class="fw-bold mb-0">Пополнить счёт</h5>
                 </div>
                 <div class="card-body">
                     <form method="post" id="depositForm">
@@ -72,7 +72,7 @@
                                     <label class="btn btn-outline-secondary w-100 h-100 p-4 text-start" for="qiwi">
                                         <i class="bi bi-phone fs-2 mb-2 d-block"></i>
                                         <strong>Электронные кошельки</strong>
-                                        <small class="d-block text-muted">Qiwi, ЮMoney, WebMoney</small>
+                                        <small class="d-block text-muted">ЮMoney, WebMoney</small>
                                     </label>
                                 </div>
                             </div>
@@ -96,7 +96,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <span class="text-muted">Текущий баланс</span>
-                        <i class="bi bi-eye fs-5"></i>
+                        
                     </div>
                   <h2 class="display-5 fw-bold mb-3">${{ current_balance|floatformat:2 }}</h2>
                     <div class="d-flex gap-3">
@@ -115,7 +115,7 @@
             <!-- История операций -->
             <div class="card border-0 shadow-sm animate-card">
                 <div class="card-header bg-transparent border-0">
-                    <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>История пополнений</h6>
+                    <h6 class="fw-bold mb-0">История пополнений</h6>
                 </div>
                 <div class="card-body p-0">
                     {% if payments %}
@@ -132,7 +132,7 @@
                     </div>
                     {% else %}
                     <div class="text-center py-4 text-muted">
-                        <i class="bi bi-inbox fs-1"></i>
+                      
                         <p class="mt-2">История операций пуста</p>
                     </div>
                     {% endif %}
@@ -143,7 +143,7 @@
             <div class="card border-0 shadow-sm mt-4 animate-card">
                 <div class="card-body">
                     <div class="d-flex align-items-start">
-                        <i class="bi bi-shield-check text-success fs-4 me-3"></i>
+                       
                         <div>
                             <strong>Безопасные платежи</strong>
                             <p class="text-muted small mb-0">Все транзакции защищены SSL-шифрованием. Ваши данные в безопасности.</p>

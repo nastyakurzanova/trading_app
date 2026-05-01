@@ -30,7 +30,7 @@
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-currency-exchange me-2"></i>{{ current_symbol }} · Свечной график</span>
+                    <span>{{ current_symbol }} · Линейный график</span>
                     <span class="badge bg-light text-dark" id="updateTime">Обновлено: {{ last_update }}</span>
                 </div>
                 <div class="card-body">
@@ -57,7 +57,7 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent border-0">
-                    <i class="bi bi-cpu me-2"></i>AI‑прогноз
+                   AI‑прогноз
                 </div>
                 <div class="card-body d-flex flex-column justify-content-center">
                     <span class="text-muted small">Следующие 24 часа</span>
@@ -79,16 +79,15 @@
                     <hr class="my-4">
                     <div class="d-grid gap-2">
                         <button class="btn btn-primary" id="refreshPredictionBtn">
-                            <i class="bi bi-magic"></i> 
                             <span class="btn-text">Обновить прогноз</span>
                             <span class="spinner-border spinner-border-sm d-none" role="status"></span>
                         </button>
                         <a href="?download=report&symbol={{ current_symbol }}&period={{ current_period }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-download"></i> Скачать отчёт
+                             Скачать отчёт
                         </a>
                     </div>
                     <div class="mt-3 small text-muted">
-                        <i class="bi bi-info-circle"></i> Прогноз обновляется автоматически при смене инструмента или периода
+                        Прогноз обновляется автоматически при смене инструмента или периода
                     </div>
                 </div>
             </div>

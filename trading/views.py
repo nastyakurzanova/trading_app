@@ -1,5 +1,11 @@
 # trading/views.py
 import csv
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import io
+import urllib.parse
+import base64
 from .models import StockPortfolio, StockItem, UserAPIKey, TradingSettings, UserPay, Category
 from django.db.models import Sum
 from datetime import datetime
@@ -14,11 +20,17 @@ import matplotlib.pyplot as plt
 import io
 import urllib.parse
 import base64
+from django.db.models import Sum
+from datetime import datetime
 from django.http import JsonResponse
 from .forms import TradingSettingsForm, APIKeyForm, RegisterForm
 from .models import StockPortfolio, StockItem, UserAPIKey, TradingSettings
 from .data_fetcher import fetch_historical_data
 from .ai_model import predict_future_price, calculate_confidence
+from django.contrib.auth.views import LoginView
+from .forms import LoginForm
+
+
 
 class RegisterView(CreateView):
     form_class = RegisterForm
@@ -30,18 +42,59 @@ def home(request):
     return render(request, 'trading/dashboard.html')
 
 
+
+class CustomLoginView(LoginView):
+    form_class = LoginForm
+    template_name = 'registration/login.html'
+
 @login_required
 def dashboard(request):
-    """Блок 1: Запустить приложение (пользователь уже авторизован и видит дашборд)"""
+    """Страница Мой счёт"""
     portfolio = StockPortfolio.objects.filter(user=request.user, deleted_at__isnull=True)
     total_value = sum(item.price * item.quantity for item in portfolio)
     settings = TradingSettings.objects.filter(user=request.user).first()
     trading_active = settings.is_active if settings else False
-
+    
+    # Генерация графика портфеля
+    chart_uri = None
+    if portfolio.exists():
+        # Собираем данные для графика
+        labels = [item.stock.title for item in portfolio]
+        values = [float(item.stock.close_price) * item.quantity for item in portfolio]
+        currencies = [item.currency for item in portfolio]
+        
+        plt.figure(figsize=(10, 4))
+        plt.style.use('seaborn-v0_8-whitegrid')
+        
+        # Столбчатая диаграмма
+        colors = ['#1a5f7a', '#0d9488', '#2563eb', '#f59e0b', '#dc2626', '#059669']
+        bars = plt.bar(labels, values, color=colors[:len(labels)], alpha=0.8)
+        
+        # Добавляем подписи значений
+        for bar, value, currency in zip(bars, values, currencies):
+            symbol = '₽' if currency == 'RUB' else '$'
+            plt.text(bar.get_x() + bar.get_width()/2., bar.get_height() + max(values)*0.02,
+                    f'{symbol}{value:,.0f}', ha='center', va='bottom', fontweight='bold')
+        
+        plt.title('Распределение портфеля', fontsize=14, fontweight='bold', pad=15)
+        plt.xlabel('Активы', fontsize=10)
+        plt.ylabel('Стоимость', fontsize=10)
+        plt.xticks(rotation=45, ha='right')
+        plt.grid(axis='y', alpha=0.3)
+        plt.tight_layout()
+        
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+        buf.seek(0)
+        string = base64.b64encode(buf.read())
+        chart_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+        plt.close()
+    
     context = {
         'portfolio': portfolio,
         'total_value': total_value,
         'trading_active': trading_active,
+        'chart_uri': chart_uri,
     }
     return render(request, 'trading/dashboard.html', context)
 
@@ -588,3 +641,115 @@ def trading_decision(request):
         'trading_active': settings.is_active,
     }
     return render(request, 'trading/trading_decision.html', context)
+
+
+@login_required
+def profile_view(request):
+    """Просмотр валютного профиля пользователя"""
+    portfolio = StockPortfolio.objects.filter(user=request.user, deleted_at__isnull=True)
+    
+    # Общая сумма портфеля
+    total_value = sum(item.price * item.quantity for item in portfolio)
+    
+    # Расчёт PnL для каждого актива
+    portfolio_data = []
+    for item in portfolio:
+        current_price = item.stock.close_price
+        invested = item.price * item.quantity
+        current_value = current_price * item.quantity
+        pnl = current_value - invested
+        pnl_percent = ((current_price - item.price) / item.price) * 100
+        
+        portfolio_data.append({
+            'item': item,
+            'invested': invested,
+            'current_value': current_value,
+            'pnl': pnl,
+            'pnl_percent': pnl_percent,
+        })
+    
+    # История транзакций
+    payments = UserPay.objects.filter(user=request.user).order_by('-timestamp')[:10]
+    total_deposits = UserPay.objects.filter(user=request.user).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    # Настройки торговли
+    settings = TradingSettings.objects.filter(user=request.user).first()
+    
+    context = {
+        'portfolio_data': portfolio_data,
+        'total_value': total_value,
+        'payments': payments,
+        'total_deposits': total_deposits,
+        'settings': settings,
+    }
+    return render(request, 'trading/profile.html', context)
+
+
+@login_required
+def profile_edit(request):
+    """Редактирование личных данных пользователя"""
+    if request.method == 'POST':
+        user = request.user
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.last_name = request.POST.get('last_name', user.last_name)
+        user.middle_name = request.POST.get('middle_name', user.middle_name)
+        user.email = request.POST.get('email', user.email)
+        user.mobile = request.POST.get('mobile', user.mobile)
+        user.intro = request.POST.get('intro', user.intro)
+        user.save()
+        messages.success(request, "Профиль успешно обновлён!")
+        return redirect('profile')
+    
+    return render(request, 'trading/profile_edit.html')
+
+
+@login_required
+def portfolio_edit(request, portfolio_id):
+    """Редактирование позиции в портфеле"""
+    from datetime import datetime
+    
+    portfolio_item = get_object_or_404(
+        StockPortfolio, 
+        id=portfolio_id, 
+        user=request.user, 
+        deleted_at__isnull=True
+    )
+    
+    if request.method == 'POST':
+        new_quantity = int(request.POST.get('quantity', portfolio_item.quantity))
+        new_price = float(request.POST.get('price', portfolio_item.price))
+        new_currency = request.POST.get('currency', portfolio_item.currency)
+        
+        if new_quantity <= 0:
+            # Если количество 0 или меньше - удаляем из портфеля
+            portfolio_item.deleted_at = datetime.now()
+            portfolio_item.save()
+            messages.success(request, f"Актив {portfolio_item.stock.title} удалён из портфеля")
+        else:
+            portfolio_item.quantity = new_quantity
+            portfolio_item.price = new_price
+            portfolio_item.currency = new_currency
+            portfolio_item.save()
+            messages.success(request, f"Позиция {portfolio_item.stock.title} обновлена")
+        
+        return redirect('profile')
+    
+    # Для GET-запроса передаём portfolio_item в контекст
+    context = {
+        'portfolio_item': portfolio_item,
+    }
+    return render(request, 'trading/portfolio_edit.html', context)
+
+@login_required
+def portfolio_delete(request, portfolio_id):
+    """Удаление позиции из портфеля"""
+    portfolio_item = get_object_or_404(StockPortfolio, id=portfolio_id, user=request.user, deleted_at__isnull=True)
+    
+    if request.method == 'POST':
+        portfolio_item.deleted_at = datetime.now()
+        portfolio_item.save()
+        messages.success(request, f"Актив {portfolio_item.stock.title} удалён из портфеля")
+    
+    return redirect('profile')

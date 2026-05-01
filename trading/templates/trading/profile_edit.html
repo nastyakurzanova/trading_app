@@ -1,0 +1,63 @@
+{% extends 'trading/base.html' %}
+
+{% block title %}Редактирование профиля | TradeAI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4">
+                <h4 class="fw-bold"><i class="bi bi-person-gear me-2"></i>Редактирование профиля</h4>
+                <p class="text-muted">Обновите личную информацию</p>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Имя</label>
+                            <input type="text" name="first_name" class="form-control" 
+                                   value="{{ user.first_name }}" placeholder="Введите имя">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Фамилия</label>
+                            <input type="text" name="last_name" class="form-control" 
+                                   value="{{ user.last_name }}" placeholder="Введите фамилию">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Отчество</label>
+                            <input type="text" name="middle_name" class="form-control" 
+                                   value="{{ user.middle_name }}" placeholder="Введите отчество">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" name="email" class="form-control" 
+                                   value="{{ user.email }}" placeholder="example@mail.ru">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Телефон</label>
+                            <input type="text" name="mobile" class="form-control" 
+                                   value="{{ user.mobile }}" placeholder="+7 (999) 123-45-67">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">О себе</label>
+                            <textarea name="intro" class="form-control" rows="4" 
+                                      placeholder="Расскажите о себе...">{{ user.intro }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>Сохранить изменения
+                        </button>
+                        <a href="{% url 'profile' %}" class="btn btn-outline-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

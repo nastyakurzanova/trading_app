@@ -13,16 +13,16 @@
     <div class="mb-4">
         <div class="btn-group" role="group">
             <a href="?category=all" class="btn btn-outline-secondary {% if current_category == 'all' %}active{% endif %}">
-                <i class="bi bi-grid me-1"></i>Все
+               Все
             </a>
             <a href="?category=Форекс" class="btn btn-outline-secondary {% if current_category == 'Форекс' %}active{% endif %}">
-                <i class="bi bi-currency-exchange me-1"></i>Форекс
+                Форекс
             </a>
             <a href="?category=Акции" class="btn btn-outline-secondary {% if current_category == 'Акции' %}active{% endif %}">
-                <i class="bi bi-bar-chart me-1"></i>Акции
+               Акции
             </a>
             <a href="?category=Крипто" class="btn btn-outline-secondary {% if current_category == 'Крипто' %}active{% endif %}">
-                <i class="bi bi-currency-bitcoin me-1"></i>Крипто
+               Крипто
             </a>
         </div>
     </div>
@@ -69,7 +69,7 @@
                     
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <span class="text-muted small">
-                            <i class="bi bi-activity me-1"></i>
+                            
                             Объём: {{ stock.volume|default:'1.2M' }}
                         </span>
                         <form method="post" action="{% url 'buy_stock' stock.id %}" onclick="event.stopPropagation();">
@@ -78,7 +78,7 @@
                             <input type="hidden" name="price" value="{{ stock.close_price }}">
                             <input type="hidden" name="currency" value="{{ stock.currency }}">
                             <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4">
-                                <i class="bi bi-cart-plus me-1"></i>Купить
+                                Купить
                             </button>
                         </form>
                     </div>

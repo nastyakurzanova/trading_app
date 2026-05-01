@@ -41,11 +41,9 @@ INSTALLED_APPS = [
     'rest_framework',
 ]
 
-
-
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'
 
 STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
