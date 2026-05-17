@@ -1,12 +1,13 @@
 # trading/views.py
 import csv
+from django.utils import timezone
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import io
 import urllib.parse
 import base64
-from .models import StockPortfolio, StockItem, UserAPIKey, TradingSettings, UserPay, Category
+from .models import StockPortfolio, StockItem, UserAPIKey, TradingSettings, UserPay, Category, PortfolioSnapshot
 from django.db.models import Sum
 from datetime import datetime
 from django.shortcuts import render, redirect, get_object_or_404
@@ -49,79 +50,148 @@ class CustomLoginView(LoginView):
 
 @login_required
 def dashboard(request):
-    """Страница Мой счёт"""
+    """Страница Мой счёт с графиками"""
     from django.db.models import Sum
+    from decimal import Decimal
+    from datetime import timedelta
     
     portfolio = StockPortfolio.objects.filter(user=request.user, deleted_at__isnull=True)
     
-    # Инвестировано в активы
-    invested = sum(item.price * item.quantity for item in portfolio)
+    # Инвестировано
+    invested = sum(Decimal(str(item.price)) * item.quantity for item in portfolio)
     
-    # Текущая стоимость портфеля
-    current_portfolio_value = sum(item.stock.close_price * item.quantity for item in portfolio)
+    # Текущая стоимость
+    current_portfolio_value = sum(Decimal(str(item.stock.close_price)) * item.quantity for item in portfolio)
     
     # Всего пополнений
     total_deposits = UserPay.objects.filter(user=request.user).aggregate(
         total=Sum('amount')
-    )['total'] or 0
+    )['total'] or Decimal('0.00')
     
-    # Доступный баланс
     available_balance = total_deposits - invested
-    
-    # Прибыль/убыток
     pnl = current_portfolio_value - invested
-    pnl_percent = (pnl / invested * 100) if invested > 0 else 0
+    pnl_percent = (pnl / invested * Decimal('100')) if invested > 0 else Decimal('0')
     
     settings = TradingSettings.objects.filter(user=request.user).first()
     trading_active = settings.is_active if settings else False
     
-    # Генерация графика
+    # Сохраняем снимок портфеля раз в час
+    if current_portfolio_value > 0:
+        last_snapshot = PortfolioSnapshot.objects.filter(user=request.user).first()
+        if not last_snapshot or (timezone.now() - last_snapshot.created_at).seconds > 3600:
+            PortfolioSnapshot.objects.create(
+                user=request.user,
+                total_value=current_portfolio_value,
+                invested=invested
+            )
+    
+    # График изменения стоимости во времени
+    timeline_chart_uri = None
+    snapshots = PortfolioSnapshot.objects.filter(user=request.user).order_by('created_at')[:30]
+    
+    if snapshots.count() >= 2:
+        plt.figure(figsize=(10, 3))
+        plt.style.use('seaborn-v0_8-whitegrid')
+        
+        dates = [s.created_at for s in snapshots]
+        values = [float(s.total_value) for s in snapshots]
+        
+        # Основная линия
+        plt.plot(dates, values, color='#1a5f7a', linewidth=2, marker='o', markersize=4, markerfacecolor='white', markeredgecolor='#1a5f7a')
+        
+        # Заливка под графиком
+        plt.fill_between(dates, values, alpha=0.1, color='#1a5f7a')
+        
+        # Добавляем подписи значений на точках
+        for i, (date, value) in enumerate(zip(dates, values)):
+            if i % max(1, len(dates)//5) == 0:  # Подписываем каждую 5-ю точку
+                plt.annotate(f'${value:,.0f}', 
+                           (date, value), 
+                           textcoords="offset points", 
+                           xytext=(0, 10), 
+                           ha='center', 
+                           fontsize=8, 
+                           color='#1a5f7a')
+        
+        plt.title('Изменение стоимости портфеля', fontsize=13, fontweight='bold', pad=10)
+        plt.xlabel('Дата', fontsize=10)
+        plt.ylabel('Стоимость ($)', fontsize=10)
+        plt.grid(True, alpha=0.3)
+        plt.gcf().autofmt_xdate()
+        plt.tight_layout()
+        
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=120, bbox_inches='tight', facecolor='white')
+        buf.seek(0)
+        string = base64.b64encode(buf.read())
+        timeline_chart_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+        plt.close()
+    
+    # Если недостаточно снимков, создаём график на основе пополнений
+    if not timeline_chart_uri:
+        payments = UserPay.objects.filter(user=request.user).order_by('timestamp')[:30]
+        if payments.count() >= 2:
+            plt.figure(figsize=(10, 3))
+            plt.style.use('seaborn-v0_8-whitegrid')
+            
+            dates = [p.timestamp for p in payments]
+            values = []
+            running_total = 0
+            for p in payments:
+                running_total += float(p.amount)
+                values.append(running_total)
+            
+            plt.plot(dates, values, color='#1a5f7a', linewidth=2, marker='o', markersize=4)
+            plt.fill_between(dates, values, alpha=0.1, color='#1a5f7a')
+            plt.title('История пополнений (накопительно)', fontsize=13, fontweight='bold', pad=10)
+            plt.xlabel('Дата', fontsize=10)
+            plt.ylabel('Сумма ($)', fontsize=10)
+            plt.grid(True, alpha=0.3)
+            plt.gcf().autofmt_xdate()
+            plt.tight_layout()
+            
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png', dpi=120, bbox_inches='tight', facecolor='white')
+            buf.seek(0)
+            string = base64.b64encode(buf.read())
+            timeline_chart_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+            plt.close()
+    
+    # Столбчатая диаграмма
     chart_uri = None
+    portfolio_change_percent = Decimal('0')
+    
     if portfolio.exists():
         labels = [item.stock.title for item in portfolio]
-        values = [float(item.stock.close_price) * item.quantity for item in portfolio]
+        entry_values = [float(item.price) * item.quantity for item in portfolio]
+        current_values = [float(item.stock.close_price) * item.quantity for item in portfolio]
         
         plt.figure(figsize=(10, 4))
-        plt.style.use('seaborn-v0_8-whitegrid')
-        colors = ['#1a5f7a', '#0d9488', '#2563eb', '#f59e0b', '#dc2626', '#059669']
-        bars = plt.bar(labels, values, color=colors[:len(labels)], alpha=0.8)
+        x = range(len(labels))
+        width = 0.35
         
-        for bar, value in zip(bars, values):
-            plt.text(bar.get_x() + bar.get_width()/2., bar.get_height() + max(values)*0.02,
-                    f'₽{value:,.0f}', ha='center', va='bottom', fontweight='bold', fontsize=8)
+        plt.bar([i - width/2 for i in x], entry_values, width, label='Цена входа', color='#94a3b8', alpha=0.8)
+        plt.bar([i + width/2 for i in x], current_values, width, label='Текущая цена', color='#1a5f7a', alpha=0.9)
         
-        plt.title('Распределение портфеля', fontsize=14, fontweight='bold', pad=15)
-        plt.xticks(rotation=45, ha='right')
+        plt.xticks(x, labels, rotation=45, ha='right')
+        plt.ylabel('Стоимость ($)', fontsize=10)
+        plt.title('Состав портфеля', fontsize=13, fontweight='bold', pad=10)
+        plt.legend()
         plt.grid(axis='y', alpha=0.3)
         plt.tight_layout()
         
         buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+        plt.savefig(buf, format='png', dpi=120, bbox_inches='tight', facecolor='white')
         buf.seek(0)
         string = base64.b64encode(buf.read())
         chart_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
         plt.close()
-    
-    # PnL для каждого актива
-    portfolio_data = []
-    for item in portfolio:
-        current_price = item.stock.close_price
-        item_invested = item.price * item.quantity
-        item_current_value = current_price * item.quantity
-        item_pnl = item_current_value - item_invested
-        item_pnl_percent = ((current_price - item.price) / item.price) * 100
         
-        portfolio_data.append({
-            'item': item,
-            'invested': item_invested,
-            'current_value': item_current_value,
-            'pnl': item_pnl,
-            'pnl_percent': item_pnl_percent,
-        })
+        if invested > 0:
+            portfolio_change_percent = (current_portfolio_value - invested) / invested * Decimal('100')
     
     context = {
         'portfolio': portfolio,
-        'portfolio_data': portfolio_data,
         'total_value': current_portfolio_value,
         'invested': invested,
         'available_balance': available_balance,
@@ -130,8 +200,12 @@ def dashboard(request):
         'pnl_percent': pnl_percent,
         'trading_active': trading_active,
         'chart_uri': chart_uri,
+        'timeline_chart_uri': timeline_chart_uri,
+        'portfolio_change_percent': portfolio_change_percent,
     }
     return render(request, 'trading/dashboard.html', context)
+
+
 
 @login_required
 def refresh_news(request):
@@ -409,36 +483,33 @@ def stock_detail(request, slug):
 def buy_stock(request, stock_id):
     """Покупка актива с проверкой баланса"""
     if request.method == 'POST':
+        from decimal import Decimal
+        
         stock = get_object_or_404(StockItem, id=stock_id)
         quantity = int(request.POST.get('quantity', 1))
         currency = request.POST.get('currency', stock.currency)
-        price = float(request.POST.get('price', stock.close_price))
+        price = Decimal(str(request.POST.get('price', stock.close_price)))
         
         total_cost = price * quantity
         
-        # Считаем текущий баланс пользователя
+        # Текущий баланс
         portfolio = StockPortfolio.objects.filter(user=request.user, deleted_at__isnull=True)
-        current_balance = sum(item.price * item.quantity for item in portfolio)
+        invested = sum(Decimal(str(item.price)) * item.quantity for item in portfolio)
         
-        # Считаем общую сумму пополнений
-        from django.db.models import Sum
         total_deposits = UserPay.objects.filter(user=request.user).aggregate(
             total=Sum('amount')
-        )['total'] or 0
+        )['total'] or Decimal('0.00')
         
-        # Доступный баланс = пополнения - инвестировано
-        available_balance = total_deposits - current_balance
+        available_balance = total_deposits - invested
         
-        # Проверяем, хватает ли денег
         if total_cost > available_balance:
             messages.warning(
                 request, 
                 f'Недостаточно средств для покупки {quantity} {stock.title} на сумму {total_cost:.2f} {currency}. '
-                f'Доступно: {available_balance:.2f} {currency}. Пополните счёт для совершения операции.'
+                f'Доступно: {available_balance:.2f} {currency}. Пополните счёт.'
             )
             return redirect('deposit')
         
-        # Если денег хватает, создаём позицию в портфеле
         portfolio_item, created = StockPortfolio.objects.get_or_create(
             user=request.user,
             stock=stock,
@@ -464,15 +535,16 @@ def deposit(request):
     from .models import UserPay
     from django.db.models import Sum
     from django.contrib import messages
+    from decimal import Decimal
     
     # Текущий баланс (сумма ВСЕХ пополнений минус инвестировано)
     total_deposits = UserPay.objects.filter(user=request.user).aggregate(
         total=Sum('amount')
-    )['total'] or 0
+    )['total'] or Decimal('0.00')
     
     # Инвестировано в активы
     portfolio = StockPortfolio.objects.filter(user=request.user, deleted_at__isnull=True)
-    invested = sum(item.price * item.quantity for item in portfolio)
+    invested = sum(Decimal(str(item.price)) * item.quantity for item in portfolio)
     
     # Доступный баланс = пополнения - инвестировано
     current_balance = total_deposits - invested
@@ -483,7 +555,7 @@ def deposit(request):
         acquiring = request.POST.get('acquiring')
         
         try:
-            amount = float(amount)
+            amount = Decimal(str(amount))
             if amount <= 0:
                 messages.error(request, "Сумма должна быть больше нуля")
             else:
@@ -495,13 +567,13 @@ def deposit(request):
                     acquiring=acquiring
                 )
                 
-                # Пересчитываем баланс после пополнения
+                # Пересчитываем баланс
                 new_total_deposits = total_deposits + amount
                 new_balance = new_total_deposits - invested
                 
                 messages.success(request, f"Счёт успешно пополнен на ₽{amount:.2f}. Доступный баланс: ₽{new_balance:.2f}")
                 return redirect('dashboard')
-        except ValueError:
+        except (ValueError, TypeError):
             messages.error(request, "Введите корректную сумму")
     
     # Получаем историю платежей
@@ -514,7 +586,6 @@ def deposit(request):
         'invested': invested,
     }
     return render(request, 'trading/deposit.html', context)
-
 
 def about_invest(request):
     return render(request, 'trading/about_invest.html')

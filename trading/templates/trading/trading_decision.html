@@ -16,7 +16,7 @@
 
                 {% if trading_active %}
                     <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i> Торговля активна. Вы можете остановить её или продолжить.
+                         Торговля активна. Вы можете остановить её или продолжить.
                     </div>
                 {% else %}
                     <div class="alert alert-secondary">
@@ -28,10 +28,10 @@
                 <form method="post" class="d-flex gap-2">
                     {% csrf_token %}
                     <button type="submit" name="action" value="continue" class="btn btn-success btn-lg flex-fill">
-                        <i class="bi bi-play-circle"></i> Продолжить торги
+                         Продолжить торги
                     </button>
                     <button type="submit" name="action" value="stop" class="btn btn-danger btn-lg flex-fill">
-                        <i class="bi bi-stop-circle"></i> Остановить торги
+                         Остановить торги
                     </button>
                 </form>
                 {% else %}

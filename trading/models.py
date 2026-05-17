@@ -95,6 +95,21 @@ class TradingSettings(models.Model):
         return f"Настройки {self.user.username}"
     
 
+class PortfolioSnapshot(models.Model):
+    """Снимок стоимости портфеля для построения графика динамики"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    total_value = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Общая стоимость")
+    invested = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Инвестировано")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    
+    class Meta:
+        verbose_name = "Снимок портфеля"
+        verbose_name_plural = "Снимки портфеля"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.total_value} - {self.created_at.strftime('%d.%m.%Y %H:%M')}"
+
 class News(models.Model):
     """Модель для хранения финансовых новостей"""
     title = models.CharField(max_length=500, verbose_name="Заголовок")
