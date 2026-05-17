@@ -16,38 +16,49 @@
         </div>
     </div>
 
-    <!-- Карточки с общей информацией -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-4 animate-card">
-            <div class="card h-100 border-0">
-                <div class="card-body">
-                    <span class="text-muted text-uppercase small fw-semibold">Общий баланс</span>
-                    <h3 class="display-6 fw-bold mt-2">₽{{ total_value|floatformat:2 }}</h3>
-                    <span class="text-success"><i class="bi bi-arrow-up-short"></i> +2.4% за неделю</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 animate-card" style="animation-delay:0.05s">
-            <div class="card h-100 border-0">
-                <div class="card-body">
-                    <span class="text-muted text-uppercase small fw-semibold">Активов</span>
-                    <h3 class="display-6 fw-bold mt-2">{{ portfolio.count }}</h3>
-                    <span>в портфеле</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 animate-card" style="animation-delay:0.1s">
-            <div class="card h-100 border-0">
-                <div class="card-body">
-                    <span class="text-muted text-uppercase small fw-semibold">Статус AI</span>
-                    <h3 class="display-6 fw-bold mt-2">
-                        {% if trading_active %}<span class="text-success">Активен</span>{% else %}<span class="text-secondary">Остановлен</span>{% endif %}
-                    </h3>
-                    <span>автоторговля</span>
-                </div>
+ <!-- Карточки с общей информацией -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 animate-card">
+        <div class="card h-100 border-0">
+            <div class="card-body">
+                <span class="text-muted text-uppercase small fw-semibold">Баланс</span>
+                <h3 class="fw-bold mt-2">₽{{ available_balance|floatformat:2 }}</h3>
+                <span class="text-muted small">доступно для торговли</span>
             </div>
         </div>
     </div>
+    <div class="col-md-3 animate-card" style="animation-delay:0.05s">
+        <div class="card h-100 border-0">
+            <div class="card-body">
+                <span class="text-muted text-uppercase small fw-semibold">Портфель</span>
+                <h3 class="fw-bold mt-2">₽{{ total_value|floatformat:2 }}</h3>
+                <span class="text-muted small">текущая стоимость</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 animate-card" style="animation-delay:0.1s">
+        <div class="card h-100 border-0">
+            <div class="card-body">
+                <span class="text-muted text-uppercase small fw-semibold">P&L</span>
+                <h3 class="fw-bold mt-2 {% if pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if pnl >= 0 %}+{% endif %}₽{{ pnl|floatformat:2 }}
+                </h3>
+                <span class="{% if pnl_percent >= 0 %}text-success{% else %}text-danger{% endif %} small">
+                    {% if pnl_percent >= 0 %}+{% endif %}{{ pnl_percent|floatformat:2 }}%
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 animate-card" style="animation-delay:0.15s">
+        <div class="card h-100 border-0">
+            <div class="card-body">
+                <span class="text-muted text-uppercase small fw-semibold">Активов</span>
+                <h3 class="fw-bold mt-2">{{ portfolio.count }}</h3>
+                <span class="text-muted small">в портфеле</span>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- График портфеля -->
     <div class="card mb-4 border-0 animate-card">

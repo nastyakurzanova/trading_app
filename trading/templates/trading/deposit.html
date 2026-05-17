@@ -91,15 +91,26 @@
         
         <!-- Информация о счёте и история -->
         <div class="col-lg-5">
-            <!-- Баланс -->
-            <div class="card border-0 shadow-sm mb-4 animate-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="text-muted">Текущий баланс</span>
-                        
-                    </div>
-                  <h2 class="display-5 fw-bold mb-3">${{ current_balance|floatformat:2 }}</h2>
-                    <div class="d-flex gap-3">
+           <!-- Баланс -->
+<div class="card border-0 shadow-sm mb-4 animate-card">
+    <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <span class="text-muted">Доступный баланс</span>
+          
+        </div>
+        <h2 class="display-5 fw-bold mb-3">₽{{ current_balance|floatformat:2 }}</h2>
+        <div class="d-flex gap-3">
+            <div>
+                <small class="text-muted d-block">Всего пополнено</small>
+                <strong>₽{{ total_deposits|floatformat:2 }}</strong>
+            </div>
+            <div>
+                <small class="text-muted d-block">Инвестировано</small>
+                <strong>₽{{ invested|floatformat:2 }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
     <div>
         <small class="text-muted d-block">Всего пополнено</small>
         <strong>${{ total_deposits|floatformat:2 }}</strong>

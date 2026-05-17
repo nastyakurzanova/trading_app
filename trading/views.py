@@ -50,35 +50,47 @@ class CustomLoginView(LoginView):
 @login_required
 def dashboard(request):
     """Страница Мой счёт"""
+    from django.db.models import Sum
+    
     portfolio = StockPortfolio.objects.filter(user=request.user, deleted_at__isnull=True)
-    total_value = sum(item.price * item.quantity for item in portfolio)
+    
+    # Инвестировано в активы
+    invested = sum(item.price * item.quantity for item in portfolio)
+    
+    # Текущая стоимость портфеля
+    current_portfolio_value = sum(item.stock.close_price * item.quantity for item in portfolio)
+    
+    # Всего пополнений
+    total_deposits = UserPay.objects.filter(user=request.user).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    # Доступный баланс
+    available_balance = total_deposits - invested
+    
+    # Прибыль/убыток
+    pnl = current_portfolio_value - invested
+    pnl_percent = (pnl / invested * 100) if invested > 0 else 0
+    
     settings = TradingSettings.objects.filter(user=request.user).first()
     trading_active = settings.is_active if settings else False
     
-    # Генерация графика портфеля
+    # Генерация графика
     chart_uri = None
     if portfolio.exists():
-        # Собираем данные для графика
         labels = [item.stock.title for item in portfolio]
         values = [float(item.stock.close_price) * item.quantity for item in portfolio]
-        currencies = [item.currency for item in portfolio]
         
         plt.figure(figsize=(10, 4))
         plt.style.use('seaborn-v0_8-whitegrid')
-        
-        # Столбчатая диаграмма
         colors = ['#1a5f7a', '#0d9488', '#2563eb', '#f59e0b', '#dc2626', '#059669']
         bars = plt.bar(labels, values, color=colors[:len(labels)], alpha=0.8)
         
-        # Добавляем подписи значений
-        for bar, value, currency in zip(bars, values, currencies):
-            symbol = '₽' if currency == 'RUB' else '$'
+        for bar, value in zip(bars, values):
             plt.text(bar.get_x() + bar.get_width()/2., bar.get_height() + max(values)*0.02,
-                    f'{symbol}{value:,.0f}', ha='center', va='bottom', fontweight='bold')
+                    f'₽{value:,.0f}', ha='center', va='bottom', fontweight='bold', fontsize=8)
         
         plt.title('Распределение портфеля', fontsize=14, fontweight='bold', pad=15)
-        plt.xlabel('Активы', fontsize=10)
-        plt.ylabel('Стоимость', fontsize=10)
         plt.xticks(rotation=45, ha='right')
         plt.grid(axis='y', alpha=0.3)
         plt.tight_layout()
@@ -90,9 +102,32 @@ def dashboard(request):
         chart_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
         plt.close()
     
+    # PnL для каждого актива
+    portfolio_data = []
+    for item in portfolio:
+        current_price = item.stock.close_price
+        item_invested = item.price * item.quantity
+        item_current_value = current_price * item.quantity
+        item_pnl = item_current_value - item_invested
+        item_pnl_percent = ((current_price - item.price) / item.price) * 100
+        
+        portfolio_data.append({
+            'item': item,
+            'invested': item_invested,
+            'current_value': item_current_value,
+            'pnl': item_pnl,
+            'pnl_percent': item_pnl_percent,
+        })
+    
     context = {
         'portfolio': portfolio,
-        'total_value': total_value,
+        'portfolio_data': portfolio_data,
+        'total_value': current_portfolio_value,
+        'invested': invested,
+        'available_balance': available_balance,
+        'total_deposits': total_deposits,
+        'pnl': pnl,
+        'pnl_percent': pnl_percent,
         'trading_active': trading_active,
         'chart_uri': chart_uri,
     }
@@ -372,14 +407,38 @@ def stock_detail(request, slug):
 
 @login_required
 def buy_stock(request, stock_id):
-    """Покупка актива"""
+    """Покупка актива с проверкой баланса"""
     if request.method == 'POST':
         stock = get_object_or_404(StockItem, id=stock_id)
         quantity = int(request.POST.get('quantity', 1))
         currency = request.POST.get('currency', stock.currency)
         price = float(request.POST.get('price', stock.close_price))
         
-        # Создаём или обновляем позицию в портфеле
+        total_cost = price * quantity
+        
+        # Считаем текущий баланс пользователя
+        portfolio = StockPortfolio.objects.filter(user=request.user, deleted_at__isnull=True)
+        current_balance = sum(item.price * item.quantity for item in portfolio)
+        
+        # Считаем общую сумму пополнений
+        from django.db.models import Sum
+        total_deposits = UserPay.objects.filter(user=request.user).aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        
+        # Доступный баланс = пополнения - инвестировано
+        available_balance = total_deposits - current_balance
+        
+        # Проверяем, хватает ли денег
+        if total_cost > available_balance:
+            messages.warning(
+                request, 
+                f'Недостаточно средств для покупки {quantity} {stock.title} на сумму {total_cost:.2f} {currency}. '
+                f'Доступно: {available_balance:.2f} {currency}. Пополните счёт для совершения операции.'
+            )
+            return redirect('deposit')
+        
+        # Если денег хватает, создаём позицию в портфеле
         portfolio_item, created = StockPortfolio.objects.get_or_create(
             user=request.user,
             stock=stock,
@@ -392,14 +451,12 @@ def buy_stock(request, stock_id):
         )
         
         if not created:
-            # Если уже есть, увеличиваем количество
             portfolio_item.quantity += quantity
             portfolio_item.save()
         
-        messages.success(request, f"Куплено {quantity} {stock.title} на сумму {price * quantity:.2f} {currency}")
+        messages.success(request, f'Успешно куплено {quantity} {stock.title} на сумму {total_cost:.2f} {currency}')
         
     return redirect('instruments')
-
 
 @login_required
 def deposit(request):
@@ -408,9 +465,17 @@ def deposit(request):
     from django.db.models import Sum
     from django.contrib import messages
     
-    # Текущий баланс (сумма всех активов в портфеле)
+    # Текущий баланс (сумма ВСЕХ пополнений минус инвестировано)
+    total_deposits = UserPay.objects.filter(user=request.user).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    # Инвестировано в активы
     portfolio = StockPortfolio.objects.filter(user=request.user, deleted_at__isnull=True)
-    current_balance = sum(item.price * item.quantity for item in portfolio)
+    invested = sum(item.price * item.quantity for item in portfolio)
+    
+    # Доступный баланс = пополнения - инвестировано
+    current_balance = total_deposits - invested
     
     if request.method == 'POST':
         amount = request.POST.get('amount')
@@ -429,25 +494,27 @@ def deposit(request):
                     payment_type=payment_type,
                     acquiring=acquiring
                 )
-                messages.success(request, f"Счёт успешно пополнен на ${amount:.2f}")
+                
+                # Пересчитываем баланс после пополнения
+                new_total_deposits = total_deposits + amount
+                new_balance = new_total_deposits - invested
+                
+                messages.success(request, f"Счёт успешно пополнен на ₽{amount:.2f}. Доступный баланс: ₽{new_balance:.2f}")
                 return redirect('dashboard')
         except ValueError:
             messages.error(request, "Введите корректную сумму")
     
-    # Получаем историю платежей пользователя
+    # Получаем историю платежей
     payments = UserPay.objects.filter(user=request.user).order_by('-timestamp')[:10]
-    
-    # Считаем общую сумму пополнений
-    total_deposits = UserPay.objects.filter(user=request.user).aggregate(
-        total=Sum('amount')
-    )['total'] or 0
     
     context = {
         'payments': payments,
         'total_deposits': total_deposits,
         'current_balance': current_balance,
+        'invested': invested,
     }
     return render(request, 'trading/deposit.html', context)
+
 
 def about_invest(request):
     return render(request, 'trading/about_invest.html')
