@@ -5,9 +5,8 @@
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-purple)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-**TradeAI** — это современная веб-платформа для торговли на фондовом и валютном рынках с элементами искусственного интеллекта для прогнозирования цен.
+TradeAI — это современная веб-платформа для торговли на фондовом и валютном рынках с элементами искусственного интеллекта для прогнозирования цен.
 
-![Главный экран](https://via.placeholder.com/800x400/1a5f7a/ffffff?text=TradeAI+Dashboard)
 
 ##  Основные возможности
 
@@ -53,7 +52,7 @@
 - История транзакций
 - Безопасные платежи
 
-## 🛠 Технологический стек
+##  Технологический стек
 
 | Категория | Технологии |
 |-----------|------------|
@@ -63,10 +62,3 @@
 | **AI/ML** | NumPy, Pandas, Matplotlib, TensorFlow/Keras |
 | **Данные** | Yahoo Finance API, Dukascopy |
 | **Деплой** | Gunicorn, Nginx (опционально) |
-
-##  Установка и запуск
-
-### 1. Клонирование репозитория
-```bash
-git clone https://github.com/yourusername/tradeai.git
-cd tradeai
