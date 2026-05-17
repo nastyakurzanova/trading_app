@@ -307,14 +307,19 @@ def analytics(request):
 @login_required
 def instruments(request):
     """Страница доступных инструментов с фильтрацией"""
+    from .models import Category
+    
+    # Если база пуста, заполняем автоматически
+    if StockItem.objects.count() == 0:
+        from django.core.management import call_command
+        call_command('seed_data')
+    
     stocks = StockItem.objects.all()
     category_filter = request.GET.get('category', 'all')
     
     if category_filter != 'all':
         stocks = stocks.filter(category__title=category_filter)
     
-    # Получаем все категории для фильтра
-    from .models import Category
     categories = Category.objects.all()
     
     context = {
@@ -323,6 +328,7 @@ def instruments(request):
         'current_category': category_filter,
     }
     return render(request, 'trading/instruments.html', context)
+
 
 @login_required
 def stock_detail(request, slug):
