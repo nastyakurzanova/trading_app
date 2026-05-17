@@ -1,3 +1,5 @@
+
+
 #  TradeAI — Торговая платформа с AI-прогнозированием
 
 ![Django](https://img.shields.io/badge/Django-6.0-green)

@@ -9,7 +9,6 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold">Добрый день, {{ user.first_name|default:user.username }}!</h2>
-            <p class="text-muted">Ваш портфель на {{ now|date:"d.m.Y" }}</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'configure_app' %}" class="btn btn-outline-secondary"><i class="bi bi-sliders2 me-1"></i> Настроить</a>
